@@ -54,18 +54,18 @@ class PyExperimentSuite(object):
     # change this in subclass, if you support restoring state on iteration level
     restore_supported = False
     
-    def __init__(self):
-        self.parse_opt()
+    def __init__(self, config_path='experiments.cfg'):
+        self.parse_opt(config_path)
         self.parse_cfg()
         
         # list of keys, that had to be renamed because they contained spaces
         self.key_warning_issued = []
     
-    def parse_opt(self):
+    def parse_opt(self, config_path):
         """ parses the command line options for different settings. """
         optparser = optparse.OptionParser()
         optparser.add_option('-c', '--config',
-            action='store', dest='config', type='string', default='experiments.cfg', 
+            action='store', dest='config', type='string', default=config_path,
             help="your experiments config file")
         optparser.add_option('-n', '--numcores',
             action='store', dest='ncores', type='int', default=cpu_count(), 
