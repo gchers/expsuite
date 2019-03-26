@@ -5,10 +5,10 @@
 # Derive your experiment from the PyExperimentSuite, fill in the reset() and
 # iterate() methods, and define your defaults and experiments variables
 # in a config file.
-# PyExperimentSuite will create directories, run the experiments and store the
+# PyExperimentSuite will create directories, run the experiments and store the 
 # logged data. An aborted experiment can be resumed at any time. If you want
 # to resume it on iteration level (instead of repetition level) you need to
-# implement the restore_state and save_state method and make sure the
+# implement the restore_state and save_state method and make sure the 
 # restore_supported variable is set to True.
 #
 # For more information, consult the included documentation.pdf file.
@@ -19,7 +19,7 @@
 #
 #############################################################################
 
-from configparser import ConfigParser
+from ConfigParser import ConfigParser
 from multiprocessing import Process, Pool, cpu_count
 from numpy import *
 import os, sys, time, itertools, re, optparse, types
@@ -38,29 +38,29 @@ def progress(params, rep):
         lines = logfile.readlines()
         logfile.close()
         return int(100 * len(lines) / params['iterations'])
-    else:
+    else: 
         return 0
 
 def convert_param_to_dirname(param):
     """ Helper function to convert a parameter value to a valid directory name. """
-    if type(param) == bytes:
+    if type(param) == types.StringType:
         return param
     else:
         return re.sub("0+$", '0', '%f'%param)
 
 
 class PyExperimentSuite(object):
-
+    
     # change this in subclass, if you support restoring state on iteration level
     restore_supported = False
-
+    
     def __init__(self, config_path='experiments.cfg'):
         self.parse_opt(config_path)
         self.parse_cfg()
-
+        
         # list of keys, that had to be renamed because they contained spaces
         self.key_warning_issued = []
-
+    
     def parse_opt(self, config_path):
         """ parses the command line options for different settings. """
         optparser = optparse.OptionParser()
@@ -68,58 +68,58 @@ class PyExperimentSuite(object):
             action='store', dest='config', type='string', default=config_path,
             help="your experiments config file")
         optparser.add_option('-n', '--numcores',
-            action='store', dest='ncores', type='int', default=cpu_count(),
-            help="number of processes you want to use, default is %i"%cpu_count())
+            action='store', dest='ncores', type='int', default=cpu_count(), 
+            help="number of processes you want to use, default is %i"%cpu_count())  
         optparser.add_option('-d', '--del',
-            action='store_true', dest='delete', default=False,
+            action='store_true', dest='delete', default=False, 
             help="delete experiment folder if it exists")
         optparser.add_option('-e', '--experiment',
             action='append', dest='experiments', type='string',
             help="run only selected experiments, by default run all experiments in config file.")
         optparser.add_option('-b', '--browse',
-            action='store_true', dest='browse', default=False,
-            help="browse existing experiments.")
+            action='store_true', dest='browse', default=False, 
+            help="browse existing experiments.")      
         optparser.add_option('-B', '--Browse',
-            action='store_true', dest='browse_big', default=False,
-            help="browse existing experiments, more verbose than -b")
+            action='store_true', dest='browse_big', default=False, 
+            help="browse existing experiments, more verbose than -b")      
         optparser.add_option('-p', '--progress',
-            action='store_true', dest='progress', default=False,
+            action='store_true', dest='progress', default=False, 
             help="like browse, but only shows name and progress bar")
 
         options, args = optparser.parse_args()
         self.options = options
         return options, args
-
+    
     def parse_cfg(self):
         """ parses the given config file for experiments. """
         self.cfgparser = ConfigParser()
         if not self.cfgparser.read(self.options.config):
-            raise SystemExit('config file %s not found.'%self.options.config)
-
-
+            raise SystemExit('config file %s not found.'%self.options.config) 
+            
+    
     def mkdir(self, path):
         """ create a directory if it does not exist. """
         if not os.path.exists(path):
             os.makedirs(path)
-
+            
     def get_exps(self, path='.'):
         """ go through all subdirectories starting at path and return the experiment
             identifiers (= directory names) of all existing experiments. A directory
-            is considered an experiment if it contains a experiment.cfg file.
+            is considered an experiment if it contains a experiment.cfg file. 
         """
         exps = []
         for dp, dn, fn in os.walk(path):
             if 'experiment.cfg' in fn:
                 subdirs = [os.path.join(dp, d) for d in os.listdir(dp) if os.path.isdir(os.path.join(dp, d))]
-                if all([self.get_exps(s) == [] for s in subdirs]):
+                if all(map(lambda s: self.get_exps(s) == [], subdirs)):       
                     exps.append(dp)
         return exps
-
+    
     def items_to_params(self, items):
-        """ evaluate the found items (strings) to become floats, ints or lists.
+        """ evaluate the found items (strings) to become floats, ints or lists. 
         """
         params = {}
-        for t,v in items:
+        for t,v in items:       
             try:
                 # try to evaluate parameter (float, int, list)
                 if v in ['grid', 'list']:
@@ -131,8 +131,8 @@ class PyExperimentSuite(object):
             except (NameError, SyntaxError):
                 # otherwise assume string
                 params[t] = v
-        return params
-
+        return params        
+           
     def get_params(self, exp, cfgname='experiment.cfg'):
         """ reads the parameters of the experiment (= path) given.
         """
@@ -145,7 +145,7 @@ class PyExperimentSuite(object):
 
     def get_exp(self, name, path='.'):
         """ given an experiment name (used in section titles), this function
-            returns the correct path of the experiment.
+            returns the correct path of the experiment. 
         """
         exps = []
         for dp, dn, df in os.walk(path):
@@ -155,8 +155,8 @@ class PyExperimentSuite(object):
                 if name in cfgp.sections():
                     exps.append(dp)
         return exps
-
-
+            
+    
     def write_config_file(self, params, path):
         """ write a config file for this single exp in the folder path.
         """
@@ -169,23 +169,23 @@ class PyExperimentSuite(object):
         f = open(os.path.join(path, 'experiment.cfg'), 'w')
         cfgp.write(f)
         f.close()
-
+                
     def get_history(self, exp, rep, tags):
         """ returns the whole history for one experiment and one repetition.
             tags can be a string or a list of strings. if tags is a string,
-            the history is returned as list of values, if tags is a list of
+            the history is returned as list of values, if tags is a list of 
             strings or 'all', history is returned as a dictionary of lists
             of values.
         """
         params = self.get_params(exp)
-
+           
         if params == None:
-            raise SystemExit('experiment %s not found.'%exp)
-
+            raise SystemExit('experiment %s not found.'%exp)         
+        
         # make list of tags, even if it is only one
         if tags != 'all' and not hasattr(tags, '__iter__'):
-            tags = [tags]
-
+            tags = [tags] 
+        
         results = {}
         logfile = os.path.join(exp, '%i.log'%rep)
         try:
@@ -211,7 +211,7 @@ class PyExperimentSuite(object):
                             results[tag].append(eval(val))
                         except (NameError, SyntaxError):
                             results[tag].append(val)
-
+                            
         f.close()
         if len(results) == 0:
             if len(tags) == 1:
@@ -220,29 +220,29 @@ class PyExperimentSuite(object):
                 return {}
             # raise ValueError('tag(s) not found: %s'%str(tags))
         if len(tags) == 1:
-            return results[list(results.keys())[0]]
+            return results[results.keys()[0]]
         else:
             return results
-
-
+    
+    
     def get_history_tags(self, exp, rep=0):
-        """ returns all available tags (logging keys) of the given experiment
-            repetition.
-
+        """ returns all available tags (logging keys) of the given experiment 
+            repetition. 
+            
             Note: Technically, each repetition could have different
-            tags, therefore the rep number can be passed in as parameter,
-            even though usually all repetitions have the same tags. The default
+            tags, therefore the rep number can be passed in as parameter, 
+            even though usually all repetitions have the same tags. The default 
             repetition is 0 and in most cases, can be omitted.
         """
         history = self.get_history(exp, rep, 'all')
-        return list(history.keys())
-
-
+        return history.keys()
+    
+    
     def get_value(self, exp, rep, tags, which='last'):
         """ Like get_history(..) but returns only one single value rather
-            than the whole list.
+            than the whole list. 
             tags can be a string or a list of strings. if tags is a string,
-            the history is returned as a single value, if tags is a list of
+            the history is returned as a single value, if tags is a list of 
             strings, history is returned as a dictionary of values.
             'which' can be one of the following:
                 last: returns the last value of the history
@@ -251,11 +251,11 @@ class PyExperimentSuite(object):
                    #: (int) returns the value at that index
         """
         history = self.get_history(exp, rep, tags)
-
+        
         # empty histories always return None
         if len(history) == 0:
             return None
-
+            
         # distinguish dictionary (several tags) from list
         if type(history) == dict:
             for h in history:
@@ -268,7 +268,7 @@ class PyExperimentSuite(object):
                 if type(which) == int:
                     history[h] = history[h][which]
             return history
-
+            
         else:
             if which == 'last':
                 return history[-1]
@@ -278,21 +278,21 @@ class PyExperimentSuite(object):
                 return max(history)
             if type(which) == int:
                 return history[which]
-            else:
+            else: 
                 return None
-
+        
     def get_values_fix_params(self, exp, rep, tag, which='last', **kwargs):
         """ this function uses get_value(..) but returns all values where the
             subexperiments match the additional kwargs arguments. if alpha=1.0,
             beta=0.01 is given, then only those experiment values are returned,
             as a list.
-        """
+        """ 
         subexps = self.get_exps(exp)
         tagvalues = ['%s%s'%(k, convert_param_to_dirname(kwargs[k])) for k in kwargs]
-
-        values = [self.get_value(se, rep, tag, which) for se in subexps if all([tv in se for tv in tagvalues])]
-        params = [self.get_params(se) for se in subexps if all([tv in se for tv in tagvalues])]
-
+        
+        values = [self.get_value(se, rep, tag, which) for se in subexps if all(map(lambda tv: tv in se, tagvalues))]
+        params = [self.get_params(se) for se in subexps if all(map(lambda tv: tv in se, tagvalues))]
+        
         return values, params
 
     def get_histories_fix_params(self, exp, rep, tag, **kwargs):
@@ -300,15 +300,15 @@ class PyExperimentSuite(object):
             subexperiments match the additional kwargs arguments. if alpha=1.0,
             beta = 0.01 is given, then only those experiment histories are returned,
             as a list.
-        """
+        """ 
         subexps = self.get_exps(exp)
         tagvalues = [re.sub("0+$", '0', '%s%f'%(k, kwargs[k])) for k in kwargs]
 
-        histories = [self.get_history(se, rep, tag) for se in subexps if all([tv in se for tv in tagvalues])]
-        params = [self.get_params(se) for se in subexps if all([tv in se for tv in tagvalues])]
+        histories = [self.get_history(se, rep, tag) for se in subexps if all(map(lambda tv: tv in se, tagvalues))]
+        params = [self.get_params(se) for se in subexps if all(map(lambda tv: tv in se, tagvalues))]
 
         return histories, params
-
+    
     def get_histories_over_repetitions(self, exp, tags, aggregate):
         """ this function gets all histories of all repetitions using get_history() on the given
             tag(s), and then applies the function given by 'aggregate' to all corresponding values
@@ -316,15 +316,15 @@ class PyExperimentSuite(object):
             'max'.
         """
         params = self.get_params(exp)
-
+        
         # explicitly make tags list in case of 'all'
         if tags == 'all':
-            tags = list(self.get_history(exp, 0, 'all').keys())
-
+            tags = self.get_history(exp, 0, 'all').keys()
+        
         # make list of tags if it is just a string
         if not hasattr(tags, '__iter__'):
             tags = [tags]
-
+         
         results = {}
         for tag in tags:
             # get all histories
@@ -337,42 +337,42 @@ class PyExperimentSuite(object):
                     h = self.get_history(exp, i, tag)
                     if len(h) == 0:
                         # history not existent, skip it
-                        print(('warning: history %i has length 0 (expected: %i). it will be skipped.'%(i, params['iterations'])))
+                        print('warning: history %i has length 0 (expected: %i). it will be skipped.'%(i, params['iterations'])) 
                         skipped.append(i)
                     elif len(h) > params['iterations']:
-                        # if history too long, crop it
-                        print(('warning: history %i has length %i (expected: %i). it will be truncated.'%(i, len(h), params['iterations'])))
+                        # if history too long, crop it 
+                        print('warning: history %i has length %i (expected: %i). it will be truncated.'%(i, len(h), params['iterations']))
                         h = h[:params['iterations']]
                         histories[i,:] = h
                     elif len(h) < params['iterations']:
                         # if history too short, crop everything else
-                        print(('warning: history %i has length %i (expected: %i). all other histories will be truncated.'%(i, len(h), params['iterations'])))
+                        print('warning: history %i has length %i (expected: %i). all other histories will be truncated.'%(i, len(h), params['iterations']))
                         params['iterations'] = len(h)
                         histories = histories[:,:params['iterations']]
                         histories[i, :] = h
-
+            
             # remove all rows that have been skipped
             histories = delete(histories, skipped, axis=0)
             params['repetitions'] -= len(skipped)
-
+                
             # calculate result from each column with aggregation function
             aggregated = zeros(params['iterations'])
             for i in range(params['iterations']):
                 aggregated[i] = aggregate(histories[:, i])
-
+            
             # if only one tag is requested, return list immediately, otherwise append to dictionary
             if len(tags) == 1:
                 return aggregated
             else:
                 results[tag] = aggregated
-
+            
         return results
-
-
-
-    def browse(self):
+        
+            
+    
+    def browse(self): 
         """ go through all subfolders (starting at '.') and return information
-            about the existing experiments. if the -B option is given, all
+            about the existing experiments. if the -B option is given, all 
             parameters are shown, -b only displays the most important ones.
             this function does *not* execute any experiments.
         """
@@ -383,26 +383,26 @@ class PyExperimentSuite(object):
             # if -e option is used, only show requested experiments
             if self.options.experiments and basename not in self.options.experiments:
                 continue
-
+                
             fullpath = os.path.join(params['path'], name)
-
+            
             # calculate progress
             prog = 0
             for i in range(params['repetitions']):
                 prog += progress(params, i)
             prog /= params['repetitions']
-
+            
             # if progress flag is set, only show the progress bars
             if self.options.progress:
                 bar = "["
                 bar += "="*int(prog/4)
                 bar += " "*int(25-prog/4)
                 bar += "]"
-                print('%3i%% %27s %s'%(prog,bar,d))
+                print '%3i%% %27s %s'%(prog,bar,d)
                 continue
-
-            print('%16s %s'%('experiment', d))
-
+            
+            print '%16s %s'%('experiment', d)
+                           
             try:
                 minfile = min(
                     (os.path.join(dirname, filename)
@@ -410,7 +410,7 @@ class PyExperimentSuite(object):
                     for filename in filenames
                     if filename.endswith(('.log', '.cfg'))),
                     key=lambda fn: os.stat(fn).st_mtime)
-
+            
                 maxfile = max(
                     (os.path.join(dirname, filename)
                     for dirname, dirnames, filenames in os.walk(fullpath)
@@ -418,33 +418,33 @@ class PyExperimentSuite(object):
                     if filename.endswith(('.log', '.cfg'))),
                     key=lambda fn: os.stat(fn).st_mtime)
             except ValueError:
-                print('         started %s'%'not yet')
-
-            else:
-                print('         started %s'%time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.stat(minfile).st_mtime)))
-                print('           ended %s'%time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.stat(maxfile).st_mtime)))
-
+                print '         started %s'%'not yet'
+                
+            else:      
+                print '         started %s'%time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.stat(minfile).st_mtime))
+                print '           ended %s'%time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.stat(maxfile).st_mtime))
+            
             for k in ['repetitions', 'iterations']:
-                print('%16s %s'%(k, params[k]))
-
-            print('%16s %i%%'%('progress', prog))
-
+                print '%16s %s'%(k, params[k])   
+            
+            print '%16s %i%%'%('progress', prog)
+            
             if self.options.browse_big:
                 # more verbose output
                 for p in [p for p in params if p not in ('repetitions', 'iterations', 'path', 'name')]:
-                    print('%16s %s'%(p, params[p]))
-
-            print()
-
+                    print '%16s %s'%(p, params[p])
+                    
+            print                     
+        
     def expand_param_list(self, paramlist):
         """ expands the parameters list according to one of these schemes:
             grid: every list item is combined with every other list item
-            list: every n-th list item of parameter lists are combined
+            list: every n-th list item of parameter lists are combined 
         """
         # for one single experiment, still wrap it in list
-        if type(paramlist) == dict:
+        if type(paramlist) == types.DictType:
             paramlist = [paramlist]
-
+        
         # get all options that are iteratable and build all combinations (grid) or tuples (list)
         iparamlist = []
         for params in paramlist:
@@ -467,7 +467,7 @@ class PyExperimentSuite(object):
 
                     for il in iterfunc(*[params[p] for p in iterparams]):
                         par = params.copy()
-                        converted = str(list(zip(iterparams, list(map(convert_param_to_dirname, il)))))
+                        converted = str(zip(iterparams, map(convert_param_to_dirname, il)))
                         par['name'] = par['name'] + '/' + re.sub("[' \[\],()]", '', converted)
                         for i, ip in enumerate(iterparams):
                             par[ip] = il[i]
@@ -477,7 +477,7 @@ class PyExperimentSuite(object):
 
         return iparamlist
 
-
+    
     def create_dir(self, params, delete=False):
         """ creates a subdirectory for the experiment, and deletes existing
             files, if the delete flag is true. then writes the current
@@ -490,20 +490,20 @@ class PyExperimentSuite(object):
         # delete old histories if --del flag is active
         if delete:
             os.system('rm %s/*' % fullpath)
-
+     
         # write a config file for this single exp. in the folder
         self.write_config_file(params, fullpath)
-
-
+        
+        
     def start(self):
-        """ starts the experiments as given in the config file. """
+        """ starts the experiments as given in the config file. """     
 
         # if -b, -B or -p option is set, only show information, don't
         # start the experiments
         if self.options.browse or self.options.browse_big or self.options.progress:
             self.browse()
             raise SystemExit
-
+        
         # read main configuration file
         paramlist = []
         for exp in self.cfgparser.sections():
@@ -511,45 +511,45 @@ class PyExperimentSuite(object):
                 params = self.items_to_params(self.cfgparser.items(exp))
                 params['name'] = exp
                 paramlist.append(params)
-
+                
         self.do_experiment(paramlist)
-
-
+                
+    
     def do_experiment(self, params):
         """ runs one experiment programatically and returns.
             params: either parameter dictionary (for one single experiment) or a list of parameter
             dictionaries (for several experiments).
         """
         paramlist = self.expand_param_list(params)
-
+        
         # create directories, write config files
         for pl in paramlist:
             # check for required param keys
             if ('name' in pl) and ('iterations' in pl) and ('repetitions' in pl) and ('path' in pl):
                self.create_dir(pl, self.options.delete)
             else:
-                print('Error: parameter set does not contain all required keys: name, iterations, repetitions, path')
+                print 'Error: parameter set does not contain all required keys: name, iterations, repetitions, path'
                 return False
-
-        # create experiment list
+            
+        # create experiment list 
         explist = []
-
+            
         # expand paramlist for all repetitions and add self and rep number
         for p in paramlist:
-            explist.extend(list(zip( [self]*p['repetitions'], [p]*p['repetitions'], list(range(p['repetitions'])) )))
-
+            explist.extend(zip( [self]*p['repetitions'], [p]*p['repetitions'], xrange(p['repetitions']) ))
+                
         # if only 1 process is required call each experiment seperately (no worker pool)
         if self.options.ncores == 1:
             for e in explist:
                 mp_runrep(e)
         else:
-            # create worker processes
+            # create worker processes    
             pool = Pool(processes=self.options.ncores)
             pool.map(mp_runrep, explist)
-
-        return True
-
-
+        
+        return True        
+        
+       
     def run_rep(self, params, rep):
         """ run a single repetition including directory creation, log files, etc. """
         name = params['name']
@@ -561,7 +561,7 @@ class PyExperimentSuite(object):
             logfile = open(logname, 'r')
             lines = logfile.readlines()
             logfile.close()
-
+            
             # if completed, continue loop
             if 'iterations' in params and len(lines) == params['iterations']:
                 return False
@@ -573,21 +573,21 @@ class PyExperimentSuite(object):
                 restore = 0
             else:
                 restore = len(lines)
-
+            
         self.reset(params, rep)
-
+        
         if restore:
             logfile = open(logname, 'a')
             self.restore_state(params, rep, restore)
         else:
             logfile = open(logname, 'w')
-
+            
         # loop through iterations and call iterate
-        for it in range(restore, params['iterations']):
+        for it in xrange(restore, params['iterations']):
             dic = self.iterate(params, rep, it)
             if self.restore_supported:
                 self.save_state(params, rep, it)
-
+                
             # replace all spaces in keys with underscores
             for k in dic:
                 if ' ' in k:
@@ -596,22 +596,22 @@ class PyExperimentSuite(object):
                     del dic[k]
                     # issue warning but only once per key
                     if k not in self.key_warning_issued:
-                        print("warning: key '%s' contained spaces and was renamed to '%s'"%(k, newk))
+                        print "warning: key '%s' contained spaces and was renamed to '%s'"%(k, newk)    
                         self.key_warning_issued.append(k)
-
+                
             # build string from dictionary
-            outstr = ' '.join(['%s:%s'%(x[0], str(x[1])) for x in list(dic.items())])
+            outstr = ' '.join(map(lambda x: '%s:%s'%(x[0], str(x[1])), dic.items()))
             logfile.write(outstr + '\n')
             logfile.flush()
         logfile.close()
 
         self.finalize(params, rep)
-
-
+    
+    
     def reset(self, params, rep):
         """ needs to be implemented by subclass. """
         pass
-
+    
     def iterate(self, params, rep, n):
         """ needs to be implemented by subclass. """
         ret = {'iteration':n, 'repetition':rep}
@@ -620,17 +620,17 @@ class PyExperimentSuite(object):
     def finalize(self, params, rep):
         """ can be implemented by sublcass. """
         pass
-
+    
     def save_state(self, params, rep, n):
         """ optionally can be implemented by subclass. """
         pass
-
+        
     def restore_state(self, params, rep, n):
         """ if the experiment supports restarting within a repetition
-            (on iteration level), load necessary stored state in this
-            function. Otherwise, restarting will be done on repetition
-            level, deleting all unfinished repetitions and restarting
+            (on iteration level), load necessary stored state in this 
+            function. Otherwise, restarting will be done on repetition 
+            level, deleting all unfinished repetitions and restarting 
             the experiments.
         """
         pass
-
+        
