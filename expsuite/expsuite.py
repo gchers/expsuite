@@ -600,10 +600,11 @@ class PyExperimentSuite(object):
                         print(("warning: key '%s' contained spaces and was renamed to '%s'"%(k, newk)))
                         self.key_warning_issued.append(k)
 
-            # build string from dictionary
-            outstr = ' '.join(['%s:%s'%(x[0], str(x[1])) for x in list(dic.items())])
-            logfile.write(outstr + '\n')
-            logfile.flush()
+            if dic:
+                # build string from dictionary
+                outstr = ' '.join(['%s:%s'%(x[0], str(x[1])) for x in list(dic.items())])
+                logfile.write(outstr + '\n')
+                logfile.flush()
         logfile.close()
 
         self.finalize(params, rep)
