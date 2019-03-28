@@ -43,7 +43,7 @@ def progress(params, rep):
 
 def convert_param_to_dirname(param):
     """ Helper function to convert a parameter value to a valid directory name. """
-    if type(param) == types.StringType:
+    if isinstance(param, str):
         return param
     else:
         return re.sub("0+$", '0', '%f'%param)
@@ -111,7 +111,7 @@ class PyExperimentSuite(object):
         for dp, dn, fn in os.walk(path):
             if 'experiment.cfg' in fn:
                 subdirs = [os.path.join(dp, d) for d in os.listdir(dp) if os.path.isdir(os.path.join(dp, d))]
-                if all(map(lambda s: self.get_exps(s) == [], subdirs)):
+                if all([self.get_exps(s) == [] for s in subdirs]):
                     exps.append(dp)
         return exps
 
@@ -220,7 +220,7 @@ class PyExperimentSuite(object):
                 return {}
             # raise ValueError('tag(s) not found: %s'%str(tags))
         if len(tags) == 1:
-            return results[results.keys()[0]]
+            return results[list(results.keys())[0]]
         else:
             return results
 
@@ -235,7 +235,7 @@ class PyExperimentSuite(object):
             repetition is 0 and in most cases, can be omitted.
         """
         history = self.get_history(exp, rep, 'all')
-        return history.keys()
+        return list(history.keys())
 
 
     def get_value(self, exp, rep, tags, which='last'):
@@ -290,8 +290,8 @@ class PyExperimentSuite(object):
         subexps = self.get_exps(exp)
         tagvalues = ['%s%s'%(k, convert_param_to_dirname(kwargs[k])) for k in kwargs]
 
-        values = [self.get_value(se, rep, tag, which) for se in subexps if all(map(lambda tv: tv in se, tagvalues))]
-        params = [self.get_params(se) for se in subexps if all(map(lambda tv: tv in se, tagvalues))]
+        values = [self.get_value(se, rep, tag, which) for se in subexps if all([tv in se for tv in tagvalues])]
+        params = [self.get_params(se) for se in subexps if all([tv in se for tv in tagvalues])]
 
         return values, params
 
@@ -304,8 +304,8 @@ class PyExperimentSuite(object):
         subexps = self.get_exps(exp)
         tagvalues = [re.sub("0+$", '0', '%s%f'%(k, kwargs[k])) for k in kwargs]
 
-        histories = [self.get_history(se, rep, tag) for se in subexps if all(map(lambda tv: tv in se, tagvalues))]
-        params = [self.get_params(se) for se in subexps if all(map(lambda tv: tv in se, tagvalues))]
+        histories = [self.get_history(se, rep, tag) for se in subexps if all([tv in se for tv in tagvalues])]
+        params = [self.get_params(se) for se in subexps if all([tv in se for tv in tagvalues])]
 
         return histories, params
 
@@ -319,7 +319,7 @@ class PyExperimentSuite(object):
 
         # explicitly make tags list in case of 'all'
         if tags == 'all':
-            tags = self.get_history(exp, 0, 'all').keys()
+            tags = list(self.get_history(exp, 0, 'all').keys())
 
         # make list of tags if it is just a string
         if not hasattr(tags, '__iter__'):
@@ -337,16 +337,16 @@ class PyExperimentSuite(object):
                     h = self.get_history(exp, i, tag)
                     if len(h) == 0:
                         # history not existent, skip it
-                        print('warning: history %i has length 0 (expected: %i). it will be skipped.'%(i, params['iterations']))
+                        print(('warning: history %i has length 0 (expected: %i). it will be skipped.'%(i, params['iterations'])))
                         skipped.append(i)
                     elif len(h) > params['iterations']:
                         # if history too long, crop it
-                        print('warning: history %i has length %i (expected: %i). it will be truncated.'%(i, len(h), params['iterations']))
+                        print(('warning: history %i has length %i (expected: %i). it will be truncated.'%(i, len(h), params['iterations'])))
                         h = h[:params['iterations']]
                         histories[i,:] = h
                     elif len(h) < params['iterations']:
                         # if history too short, crop everything else
-                        print('warning: history %i has length %i (expected: %i). all other histories will be truncated.'%(i, len(h), params['iterations']))
+                        print(('warning: history %i has length %i (expected: %i). all other histories will be truncated.'%(i, len(h), params['iterations'])))
                         params['iterations'] = len(h)
                         histories = histories[:,:params['iterations']]
                         histories[i, :] = h
@@ -398,10 +398,10 @@ class PyExperimentSuite(object):
                 bar += "="*int(prog/4)
                 bar += " "*int(25-prog/4)
                 bar += "]"
-                print('%3i%% %27s %s'%(prog,bar,d))
+                print(('%3i%% %27s %s'%(prog,bar,d)))
                 continue
 
-            print('%16s %s'%('experiment', d))
+            print(('%16s %s'%('experiment', d)))
 
             try:
                 minfile = min(
@@ -418,21 +418,21 @@ class PyExperimentSuite(object):
                     if filename.endswith(('.log', '.cfg'))),
                     key=lambda fn: os.stat(fn).st_mtime)
             except ValueError:
-                print('         started %s'%'not yet')
+                print(('         started %s'%'not yet'))
 
             else:
-                print('         started %s'%time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.stat(minfile).st_mtime)))
-                print('           ended %s'%time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.stat(maxfile).st_mtime)))
+                print(('         started %s'%time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.stat(minfile).st_mtime))))
+                print(('           ended %s'%time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.stat(maxfile).st_mtime))))
 
             for k in ['repetitions', 'iterations']:
-                print('%16s %s'%(k, params[k]))
+                print(('%16s %s'%(k, params[k])))
 
-            print('%16s %i%%'%('progress', prog))
+            print(('%16s %i%%'%('progress', prog)))
 
             if self.options.browse_big:
                 # more verbose output
                 for p in [p for p in params if p not in ('repetitions', 'iterations', 'path', 'name')]:
-                    print('%16s %s'%(p, params[p]))
+                    print(('%16s %s'%(p, params[p])))
 
             print()
 
@@ -468,7 +468,7 @@ class PyExperimentSuite(object):
 
                     for il in iterfunc(*[params[p] for p in iterparams]):
                         par = params.copy()
-                        converted = str(zip(iterparams, map(convert_param_to_dirname, il)))
+                        converted = str(list(zip(iterparams, list(map(convert_param_to_dirname, il)))))
                         par['name'] = par['name'] + '/' + re.sub("[' \[\],()]", '', converted)
                         for i, ip in enumerate(iterparams):
                             par[ip] = il[i]
@@ -537,7 +537,7 @@ class PyExperimentSuite(object):
 
         # expand paramlist for all repetitions and add self and rep number
         for p in paramlist:
-            explist.extend(zip( [self]*p['repetitions'], [p]*p['repetitions'], range(p['repetitions']) ))
+            explist.extend(list(zip( [self]*p['repetitions'], [p]*p['repetitions'], list(range(p['repetitions'])) )))
 
         # if only 1 process is required call each experiment seperately (no worker pool)
         if self.options.ncores == 1:
@@ -597,11 +597,11 @@ class PyExperimentSuite(object):
                     del dic[k]
                     # issue warning but only once per key
                     if k not in self.key_warning_issued:
-                        print("warning: key '%s' contained spaces and was renamed to '%s'"%(k, newk))
+                        print(("warning: key '%s' contained spaces and was renamed to '%s'"%(k, newk)))
                         self.key_warning_issued.append(k)
 
             # build string from dictionary
-            outstr = ' '.join(map(lambda x: '%s:%s'%(x[0], str(x[1])), dic.items()))
+            outstr = ' '.join(['%s:%s'%(x[0], str(x[1])) for x in list(dic.items())])
             logfile.write(outstr + '\n')
             logfile.flush()
         logfile.close()
